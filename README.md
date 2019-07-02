@@ -28,8 +28,8 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
   # In config/config.exs, or config.prod.exs, etc.
   config :my_app, MyApp.Mailer,
     adapter: Bamboo.MailjetAdapter,
-    api_key: "my_api_key",
-    api_private_key: "my_private_api_key"
+    api_key: "my_api_key", # or {:system, "API_KEY"},
+    api_private_key: "my_private_api_key" # or {:system, "PRIVATE_API_KEY"}
   ```
 
  **Note:** Mailjet provides a "recipients" feature. From the Mailjet documentation:

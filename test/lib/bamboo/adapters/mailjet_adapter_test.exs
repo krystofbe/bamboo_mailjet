@@ -11,6 +11,11 @@ defmodule Bamboo.MailjetAdapterTest do
     api_key: "123_abc",
     api_private_key: nil
   }
+  @config_with_env_var_key %{
+    adapter: SendGridAdapter,
+    api_key: {:system, "API_KEY"},
+    api_private_key: {:system, "API_PRIVATE_KEY"}
+  }
   defmodule FakeMailjet do
     use Plug.Router
 
@@ -80,6 +85,29 @@ defmodule Bamboo.MailjetAdapterTest do
   test "raises if the api private key is nil" do
     assert_raise ArgumentError, ~r/no api_private_key set/, fn ->
       new_email(from: "foo@bar.com") |> MailjetAdapter.deliver(@config_with_no_api_private_key)
+    end
+  end
+
+  test "can read the api key from an ENV var" do
+    System.put_env("API_KEY", "123_abc")
+    System.put_env("API_PRIVATE_KEY", "abc_123")
+
+    config = MailjetAdapter.handle_config(@config_with_env_var_key)
+
+    assert config[:api_key] == "123_abc"
+    assert config[:api_private_key] == "abc_123"
+  end
+
+  test "raises if invalid ENV vars are used as API keys" do
+    System.delete_env("API_KEY")
+    System.delete_env("API_PRIVATE_KEY")
+
+    assert_raise ArgumentError, ~r/There was no api_key set for the Mailjet adapter/, fn ->
+      new_email(from: "foo@bar.com") |> MailjetAdapter.deliver(@config_with_env_var_key)
+    end
+
+    assert_raise ArgumentError, ~r/There was no api_key set for the Mailjet adapter/, fn ->
+      MailjetAdapter.handle_config(@config_with_env_var_key)
     end
   end
 

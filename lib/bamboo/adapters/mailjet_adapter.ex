@@ -10,8 +10,8 @@ defmodule Bamboo.MailjetAdapter do
       # In config/config.exs, or config.prod.exs, etc.
       config :my_app, MyApp.Mailer,
         adapter: Bamboo.MailjetAdapter,
-        api_key: "my_api_key",
-        api_private_key: "my_private_api_key"
+        api_key: "my_api_key", # or {:system, "API_KEY"}
+        api_private_key: "my_private_api_key" # or {:system, "PRIVATE_API_KEY"}
 
       # Define a Mailer. Maybe in lib/my_app/mailer.ex
       defmodule MyApp.Mailer do
@@ -79,20 +79,26 @@ defmodule Bamboo.MailjetAdapter do
 
   @doc false
   def handle_config(config) do
-    cond do
-      config[:api_key] in [nil, "", ''] -> raise_key_error(config, :api_key)
-      config[:api_private_key] in [nil, "", ''] -> raise_key_error(config, :api_private_key)
-      true -> config
-    end
+    # build the api keys - raises if there are error
+    config
+    |> Map.merge(%{api_key: get_key(config, :api_key)})
+    |> Map.merge(%{api_private_key: get_key(config, :api_private_key)})
   end
 
   @doc false
   def supports_attachments?, do: true
 
   defp get_key(config, key) do
-    case Map.get(config, key) do
-      nil -> raise_key_error(config, key)
-      key -> key
+    config_key =
+      case Map.get(config, key) do
+        {:system, var} -> System.get_env(var)
+        key -> key
+      end
+
+    if config_key in [nil, ""] do
+      raise_key_error(config, key)
+    else
+      config_key
     end
   end
 
